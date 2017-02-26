@@ -1,0 +1,297 @@
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Operating Systems. Exercises.</title>
+    <link rel="stylesheet" href="../../style.css" type="text/css">
+    <link rel="stylesheet" href="../../prettify/prettify.css" type="text/css">
+    <script type="text/javascript" src="../../prettify/prettify.js"></script>
+  </head>
+
+  <body onload="prettyPrint()">
+    <p>
+      <span class="Title">Operating Systems. Exercise 03</span>
+    </p>
+    <div class="ParentBox">
+      <p>
+	<span class="Chapter">I. プロセスへのシグナル送受信 (準備課題, 配点無し)</span><br>
+	演習問題を解くために必要なシグナル制御のためのC言語インターフェースを説明します。<br>
+	配点はありませんので、
+	<span class="Attention">シグナル制御インターフェイスについて知っている人はここを飛ばして、下のIIに進んでください。</span>
+      </p>
+
+      <span class="Exercise">課題1</span><br>
+      <p>
+	実行中のプロセスに対してシグナルを送り、それをプログラム側で受けとることができます。
+      </p>
+      <p>
+	シグナルの受取側(プログラム)ではシグナルを受信したときに呼び出される関数を登録しておき、<br>
+	シグナル送信は今回はターミナルからkillコマンドを使って送ります。
+	以下のプログラムでいろいろ実験してください。<br>
+	<span class="Attention">
+	  [実験のために、プログラムを実行するターミナル(ktermなどのこと)と、<br>
+	  シグナルを送信する側のターミナルの計2つを用意しておくと良いでしょう]</span>
+	<br>
+      </p>
+
+      <p>
+	<span class="Weak">シグナルSIGUSR1待ちプログラム (SignalTest)</span><br>
+	<pre class="prettyprint_sample lang-c"><code>
+#include &lt;stdio.h&gt;
+#include &lt;signal.h&gt;
+
+//プロトタイプ宣言を適宜
+
+int main() {
+
+  int i;
+
+  //シグナルハンドラ関数を登録する
+  //コマンド(% kill -USR1 "プロセスID")などにより <u>シグナルSIGUSR1が送信されたとき</u> 
+  //シグナルハンドラ関数SignalHandlerが呼び出されるようになる
+  signal(SIGUSR1, SignalHandler);
+
+  for (i=0; ; ++i) {
+    sleep(1); //すごい勢いで出力され重くなるので わざと1秒ずつ待っています
+    printf("%d\n", i);
+  }
+
+  return 0;
+}
+
+// signal SIGUSR1 handler
+void SignalHandler(int code) {
+
+  printf("signal received\n");
+
+  //シグナルハンドラ関数の再登録
+  signal(SIGUSR1, SignalHandler);
+
+}
+	</code></pre>
+	<table width="90%">
+	  <tr>
+	    <td style="vertical-align:top;">
+	      <span class="Weak">ターミナル1 (シグナル待ちプログラム実行)</span><br>
+	      <pre class="CommandBoxTab"><code>
+% ./SignalTest
+
+0
+1
+2
+3 
+.
+.
+signal received (ターミナル2からSIGUSR1受信)
+.
+[Ctrl-C] (自分で終了させてください)
+	      </code></pre>
+	    </td>
+	    <td>
+	      　
+	    </td>
+	    <td style="vertical-align:top;">
+	      <span class="Weak">ターミナル2 (シグナル送信側)</span><br>
+	      <pre class="CommandBoxTab"><code>
+% ps -a | grep SignalTest
+
+ <span class="Attention">5197</span> ttys000    0:03.64 ./SignalTest
+ 5199 ttys001    0:00.00 grep SignalTest
+
+
+% kill -USR1 <span class="Attention">5197</span> (ターミナル2からプロセス<span class="Attention">5197</span>にSIGUSR1送信)
+	      </code></pre>
+	    </td>
+	  </tr>
+	</table>
+      </p>
+
+    </div>
+    <br>
+
+    <div class="ParentBox">
+      <p><span class="Chapter">II. プロセス間通信(配点100%)</span></p>
+
+      <p><span class="Exercise">課題1</span></p>
+      <p>
+	<strong>課題</strong>:
+	<a href="../ex01/ex01.html#hanoi">演習１で作成したハノイの塔の問題を任意の引数で与えた個数の円盤に対して解くプログラム</a>を
+	修正し、<br>
+	シグナル"SIGUSR1"を受け取るごとに現在のハノイの塔の状況を出力するように改変してください。
+      </p>
+
+      <p>
+	<strong>例</strong>:
+	プログラムの実行形式のファイル名を "ProcComm1"とし, 円盤数を"20"としたとき
+      </p>
+
+      <table width="90%">
+	<tr>
+	  <td style="vertical-align:top;">
+	    <span class="Weak">ターミナル1 (ハノイの塔プログラム実行)</span><br>
+	    <pre class="CommandBoxTab"><code>
+% ./ProcComm1 20
+
+(ターミナル2からSIGUSR1を受け取るたびに<br> 現在の塔の状況を出力する)
+pid:5237
+| 0|   | 0|   | 0|
+| 0|   | 0|   | 0|
+| 0|   | 0|   | 0|
+| 0|   | 0|   | 0|
+| 0|   | 0|   | 0|
+| 0|   | 0|   | 0|
+| 1|   | 0|   | 0|
+| 2|   | 0|   | 0|
+| 5|   | 0|   | 0|
+| 8|   | 0|   | 0|
+|11|   | 0|   | 0|
+|12|   | 0|   | 0|
+|13|   | 0|   | 0|
+|14|   | 0|   | 0|
+|15|   | 0|   | 0|
+|16|   | 0|   | 0|
+|17|   | 0|   | 0|
+|18|   | 4|   | 3|
+|19|   | 7|   | 6|
+|20|   |10|   | 9|
+----   ----   ----
+  A      B      C
+Number of Moves: 682
+Numer of Disks: 20
+	      </code></pre>
+	    </td>
+	    <td>
+	      　
+	    </td>
+	    <td style="vertical-align:top;">
+	      <span class="Weak">ターミナル2 (シグナル送信側)</span><br>
+	      <pre class="CommandBoxTab"><code>
+% ps -a | grep ProcComm1
+
+ 5237 ttys000    0:03.64 ./ProcComm1 20
+ 5239 ttys001    0:00.00 grep ProcComm1
+
+
+% kill -USR1 5237 (ターミナル2からSIGUSR1送信)
+	      </code></pre>
+	    </td>
+	  </tr>
+	</table>
+	<strong>補足</strong>:
+	ハノイの塔を解くプログラムがあまりに早く終わってシグナルを送る暇がない場合、
+	適当なところでsleepやusleepを使ったり、円盤数を増やしたりしてください。
+
+      <hr class="Sep">
+
+      <p><span class="Exercise"><a name="hanoi_sig">課題2</a></span></p>
+
+      <p>
+	<strong>導入</strong>:
+	課題1のプログラム中で, 関数Solveの中に円盤を移動する以下のようなコードが有ると思います。
+      </p>
+
+      <p>
+	<span class="Weak">ハノイの塔の円盤を移動する部分</span><br>
+	<pre class="prettyprint_sample lang-c"><code>
+    *_naB = *_naA;  //処理1 : 棒_Aから_Bへ移動
+    *_naA = 0;      //処理2 : 移動元の_Aの円盤をクリア
+	</code></pre>
+      </p>
+
+      <p>
+	もし"処理1"と"処理2"の間に偶然シグナルが発生しハノイの塔の状態を出力すると、<br>
+	そのとき動かしている円盤が2つ現れてしまいます(クリティカルパス)。<br>
+	クリティカルパスが発生する状況を再現するために, プログラムを以下のように
+	改変します
+      </p>
+
+      <p>
+	<span class="Weak">クリティカルパスの状況を再現</span><br>
+	<pre class="prettyprint_sample lang-c"><code>
+    *_naB = *_naA; //処理1 : 棒AからBへ移動
+    sleep(1)       //<--- わざと時間をかけ ここでシグナルが発生する状況を再現する
+    *_naA = 0;     //処理2 : 移動元のAの円盤をクリア
+	</code></pre>
+      </p>
+
+      <p>
+	改変したコードでシグナルを送る実験します。
+	すると、<span class="Attention">高確率で同じ円盤が2つ現れてしまいます</span>
+      </p>
+
+      <table width="90%">
+	<tr>
+	  <td style="vertical-align:top;">
+	    <span class="Weak">ターミナル1 (ハノイの塔プログラム実行)</span><br>
+	    <pre class="CommandBoxTab"><code>
+% ./ProcComm2 20
+
+(ターミナル2からSIGUSR1を受け取るたびに<br> 現在の塔の状況を出力する)
+pid:6812
+| 0|   | 0|   | 0|
+| 0|   | 0|   | 0|
+| 0|   | 0|   | 0|
+| 0|   | 0|   | 0|
+| 5|   | 0|   | 0|
+| 6|   | 0|   | 0|
+| 7|   | 0|   | 0|
+| 8|   | 0|   | 0|
+| 9|   | 0|   | 0|
+|10|   | 0|   | 0|
+|11|   | 0|   | 0|
+|12|   | 0|   | 0|
+|13|   | 0|   | 0|
+|14|   | 0|   | 0|
+|15|   | 0|   | 0|
+|16|   | 0|   | 0|
+|17|   | <span style="color:red;">1</span>|   | 0|
+|18|   | 2|   | 0|
+|19|   | 3|   | 0|
+|20|   | 4|   | <span style="color:red;">1</span>|
+----   ----   ----
+  A      B      C
+Number of Moves: 14
+Numer of Disks: 20
+<span style="color:red;">[1が二つ出ている]</span>
+	      </code></pre>
+	    </td>
+	    <td>
+	      　
+	    </td>
+	    <td style="vertical-align:top;">
+	      <span class="Weak">ターミナル2 (シグナル送信側)</span><br>
+	      <pre class="CommandBoxTab"><code>
+% ps -a | grep ProcComm2
+
+ 6812 ttys000    0:03.64 ./ProcComm2 20
+ 6814 ttys001    0:00.00 grep ProcComm2
+
+
+% kill -USR1 6812 (ターミナル2からSIGUSR1送信)
+	      </code></pre>
+	    </td>
+	  </tr>
+	</table>
+
+
+      <p>
+	<strong>課題</strong>:
+	今回の改変後のコードのようなケースで、2重に円盤が出力されるという状況を
+	確実に回避する手段があるでしょうか?<br>
+	有ればそのプログラムを, 無ければその理由を説明してください。
+      </p>
+      <p>
+	<strong>考え方</strong>:
+	シグナルを受信を確認したらすぐにDisplayするのではなく, シグナルを受け取ったことを記憶しておいて<br>
+	確実に処理1と処理2が終わった後でDisplayするようにできないか?
+      </p>
+
+      <br>
+      <br>
+
+      <hr>
+      <br>
+
+    </div>
+
+  </body>
+</html>
